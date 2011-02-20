@@ -1,0 +1,6 @@
+*.swp
+*.tmp
+*.pyc
+/archive
+/out
+/to_dl
