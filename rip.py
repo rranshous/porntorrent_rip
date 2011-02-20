@@ -14,9 +14,9 @@ CATEGORY_URL_TEMPLATE = 'http://www.nutorrent.com/porno/%s/'
 RESULTS_PER_PAGE = 15
 
 ARCHIVE_DIR = './archive'
-OUT_DIR = './to_dl'
 OUT_DIR = './out'
-MAX_RESULTS = 40
+OUT_DIR = './to_dl'
+MAX_RESULTS = 60
 
 def get_soup(url):
     # get our html soup
