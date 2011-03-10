@@ -6,17 +6,27 @@ from urlparse import urlparse
 import os
 from random import randint
 
-SEARCH_URL_TEMPLATE = 'http://www.nutorrent.com/sections.php?' + \
-                                          'total=%(total)s&' + \
-                                          'cname=%(cname)s&' + \
-                                          'skip=%(skip)s'
-CATEGORY_URL_TEMPLATE = 'http://www.nutorrent.com/porno/%s/'
-RESULTS_PER_PAGE = 15
+# import our config
+from ConfigParser import RawConfigParser as ConfigParser
+import os.path
+import os
 
-ARCHIVE_DIR = './archive'
-OUT_DIR = './out'
-OUT_DIR = './to_dl'
-MAX_RESULTS = 60
+# move our working directory to the current dir
+here = os.path.dirname(os.path.realpath(__file__))
+os.chdir(here)
+config = ConfigParser()
+config.read(os.path.join(here,'rip.conf'))
+
+# settings from config
+SEARCH_URL_TEMPLATE = config.get('urls','search_url_template')
+CATEGORY_URL_TEMPLATE = config.get('urls','category_url_template')
+
+RESULTS_PER_PAGE = config.getint('settings','results_per_page')
+MAX_RESULTS_PER_CATEGORY = config.getint('settings','max_results_per_category')
+
+ARCHIVE_DIR = config.get('paths','archive_dir')
+OUT_DIR = config.get('paths','out_dir')
+
 
 def get_soup(url):
     # get our html soup
@@ -109,24 +119,25 @@ def get_category_count(cat_name):
     link = links[0]
     args = get_args(link.get('href'))
     size = int(args.get('total'))
-    return size if size < MAX_RESULTS else MAX_RESULTS
+    return min(MAX_RESULTS_PER_CATEGORY,size)
 
 def run():
 
     out_paths = []
     torrent_urls = []
 
-    # get all the categories
+    # get all the categories from the website
     categories = get_category_names()
 
-    # exclude some
-    exclude = ('mature','gay','shemale/trans')
-    categories = [x for x in categories if x.lower() not in exclude]
+    # import our config to see which one's we're going to use
+    our_categories = [n for n,a in config.items('categories')]
+    categories = [c for c in categories if c.lower() in our_categories]
 
     for cat_name in categories:
         # find out the total # of results
         total = get_category_count(cat_name)
 
+        print
         print 'category: %s %s' % (cat_name,total)
 
         # we are going to go through the pages of the category manually
@@ -137,8 +148,6 @@ def run():
             result_url = SEARCH_URL_TEMPLATE % {'total':total,
                                                 'cname':cat_name,
                                                 'skip':i}
-
-            print 'processing: %s' % result_url
 
             result_torrent_urls = get_torrent_urls(result_url)
 
@@ -161,7 +170,7 @@ def run():
                 if os.path.exists(path) or os.path.exists(archive_path):
                     continue
 
-                print 'hash_path: %s' % archive_path
+                print '.',
 
                 # keep track of what we are doing
                 out_paths.append(path)
@@ -181,4 +190,5 @@ def run():
     return zip(torrent_urls,out_paths)
 
 if __name__ == '__main__':
+    print 'running'
     run()
